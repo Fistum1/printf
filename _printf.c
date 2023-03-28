@@ -1,45 +1,50 @@
-
 #include "main.h"
+#include <limits.h>
+#include <stdio.h>
+
 /**
- * _printf - Printf function
- * @format: format.
- * Return: Printed chars.
+ * _printf - produces output according to a format
+ * @format: format string containing the characters and the specifiers
+ * Description: this function will call the get_print() function that will
+ * determine which printing function to call depending on the conversion
+ * specifiers contained into fmt
+ * Return: length of the formatted output string
  */
 int _printf(const char *format, ...)
 {
-	int i, printed = 0, printed_chars = 0;
-	int f = 0, w = 0, p = 0, s = 0, ii = 0;
-	va_list ap;
-	char buffer[BUFF_SIZE];
+	int (*pfunc)(va_list, flags_t *);
+	const char *p;
+	va_list arguments;
+	flags_t flags = {0, 0, 0};
 
-	if (format == NULL)
+	register int count = 0;
+
+	va_start(arguments, format);
+	if (!format || (format[0] == '%' && !format[1]))
 		return (-1);
-	va_start(ap, format);
-	for (i = 0; format && format[i] != '\0'; i++)
+	if (format[0] == '%' && format[1] == ' ' && !format[2])
+		return (-1);
+	for (p = format; *p; p++)
 	{
-		if (format[i] != '%')
+		if (*p == '%')
 		{
-			buffer[ii++] = format[i];
-			if (ii == BUFF_SIZE)
-				print_buffer(buffer, &ii);
-			printed_chars++;
-		}
-		else
-		{
-			print_buffer(buffer, &ii);
-			f = get_flags(format, &i);
-			w = get_width(format, &i, ap);
-			p = get_precision(format, &i, ap);
-			s = get_size(format, &i);
-			++i;
-			printed = handle_print(format, &i, ap, buffer,
-				f, w, p, s);
-			if (printed == -1)
-				return (-1);
-			printed_chars += printed;
-		}
+			p++;
+			if (*p == '%')
+			{
+				count += _putchar('%');
+				continue;
+			}
+			while (get_flag(*p, &flags))
+				p++;
+			pfunc = get_print(*p);
+			count += (pfunc)
+				? pfunc(arguments, &flags)
+				: _printf("%%%c", *p);
+		} else
+			count += _putchar(*p);
 	}
-	print_buffer(buffer, &ii);
-	va_end(ap);
-	return (printed_chars);
+	_putchar(-1);
+	va_end(arguments);
+	return (count);
+
 }
